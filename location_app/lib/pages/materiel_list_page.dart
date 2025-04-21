@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/materiel.dart';
 import '../services/materiel_service.dart';
+import 'package:location_app/pages/ReservationPage.dart';
+
 
 class MaterielListPage extends StatefulWidget {
   @override
@@ -21,7 +23,6 @@ class _MaterielListPageState extends State<MaterielListPage> {
     DateTime? dateDebut;
     DateTime? dateFin;
 
-    // Affichage du dialogue de réservation avec sélecteurs de date
     showDialog(
       context: context,
       builder: (context) {
@@ -30,55 +31,53 @@ class _MaterielListPageState extends State<MaterielListPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-          
-          TextButton(
-  onPressed: () async {
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-    if (selectedDate != null) {
-      setState(() {
-        dateDebut = selectedDate;
-      });
-    }
-  },
-  child: Text(
-    dateDebut == null
-        ? 'Choisir la date de début'
-        : 'Date de début : ${dateDebut!.toLocal()}'.split(' ')[0],
-  ),
-),
-TextButton(
-  onPressed: () async {
-    if (dateDebut == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez d’abord choisir la date de début')),
-      );
-      return;
-    }
+              TextButton(
+                onPressed: () async {
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2101),
+                  );
+                  if (selectedDate != null) {
+                    setState(() {
+                      dateDebut = selectedDate;
+                    });
+                  }
+                },
+                child: Text(
+                  dateDebut == null
+                      ? 'Choisir la date de début'
+                      : 'Date de début : ${dateDebut!.toLocal()}'.split(' ')[0],
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (dateDebut == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Veuillez d’abord choisir la date de début')),
+                    );
+                    return;
+                  }
 
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: dateDebut!.add(Duration(days: 1)),
-      firstDate: dateDebut!.add(Duration(days: 1)),
-      lastDate: DateTime(2101),
-    );
-    if (selectedDate != null) {
-      setState(() {
-        dateFin = selectedDate;
-      });
-    }
-  },
-  child: Text(
-    dateFin == null
-        ? 'Choisir la date de fin'
-        : 'Date de fin : ${dateFin!.toLocal()}'.split(' ')[0],
-  ),
-),
-
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: dateDebut!.add(Duration(days: 1)),
+                    firstDate: dateDebut!.add(Duration(days: 1)),
+                    lastDate: DateTime(2101),
+                  );
+                  if (selectedDate != null) {
+                    setState(() {
+                      dateFin = selectedDate;
+                    });
+                  }
+                },
+                child: Text(
+                  dateFin == null
+                      ? 'Choisir la date de fin'
+                      : 'Date de fin : ${dateFin!.toLocal()}'.split(' ')[0],
+                ),
+              ),
             ],
           ),
           actions: [
@@ -92,17 +91,20 @@ TextButton(
               onPressed: () {
                 if (dateDebut != null && dateFin != null) {
                   // Appeler l'API pour réserver
-                  MaterielService().createReservation(materiel.id, dateDebut!.toIso8601String(), dateFin!.toIso8601String())
-                      .then((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Réservation de ${materiel.nom} réussie!')),
-                        );
-                        Navigator.of(context).pop(); // Fermer le dialogue
-                      }).catchError((error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Erreur lors de la réservation')),
-                        );
-                      });
+                  MaterielService().createReservation(
+                    materiel.id,
+                    dateDebut!.toIso8601String(),
+                    dateFin!.toIso8601String(),
+                  ).then((_) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Réservation de ${materiel.nom} réussie!')),
+                    );
+                    Navigator.of(context).pop(); // Fermer le dialogue
+                  }).catchError((error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erreur lors de la réservation')),
+                    );
+                  });
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Veuillez sélectionner des dates valides')),
@@ -120,7 +122,20 @@ TextButton(
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Liste des matériels')),
+      appBar: AppBar(
+        title: Text('Liste des matériels'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.book_online), // Icône pour ouvrir la page des réservations
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ReservationPage()), // Navigation vers la page des réservations
+              );
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Materiel>>(
         future: materiels,
         builder: (context, snapshot) {

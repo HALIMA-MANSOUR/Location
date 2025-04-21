@@ -16,6 +16,8 @@ app.get('/materiels', materielsController.getAllMateriels);
 app.post('/locations', locationsController.createLocation);
 app.get('/token', braintreeController.generateToken);
 app.post('/checkout', braintreeController.processPayment);
+app.get('/consultereserv', locationsController.getAllLocations);
+app.put('/modifreserv/:id', locationsController.updateLocation);
 
 app.listen(3000, () => {
   console.log('Serveur démarré sur le port 3000 🚀');
