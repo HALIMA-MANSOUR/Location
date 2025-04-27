@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors'); // ← ajouter cette ligne
 const app = express();
-const port = 3000;
+const PORT = 3000;
 
 app.use(cors());
 
@@ -19,6 +19,6 @@ app.post('/checkout', braintreeController.processPayment);
 app.get('/consultereserv', locationsController.getAllLocations);
 app.put('/modifreserv/:id', locationsController.updateLocation);
 
-app.listen(3000, () => {
-  console.log('Serveur démarré sur le port 3000 🚀');
+app.listen(PORT,'0.0.0.0', () => {
+  console.log(`Le serveur est en cours d'exécution sur le port :${PORT}`);
 });

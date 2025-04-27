@@ -17,7 +17,7 @@ class _ReservationPageState extends State<ReservationPage> {
 
   // Fonction pour récupérer les réservations depuis l'API
   Future<List<Map<String, dynamic>>> fetchReservations() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/consultereserv'));
+    final response = await http.get(Uri.parse('http://192.168.1.6:3000/consultereserv'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
