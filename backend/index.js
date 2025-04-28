@@ -7,7 +7,7 @@ const PORT = 3000;
 app.use(cors());
 
 const materielsController = require('./Contoller/materielsController');
-const locationsController = require('./contoller/locationsController');
+const locationsController = require('./Contoller/locationsController');
 const braintreeController=require('./Contoller/PaiementController');
 app.use(express.json());
 

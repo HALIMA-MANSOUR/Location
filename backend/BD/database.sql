@@ -35,3 +35,5 @@ CREATE TABLE locations (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (materiel_id) REFERENCES materiels(id)
 );
+ALTER TABLE locations
+ADD COLUMN prix,total DECIMAL(10,2) AFTER statut;
