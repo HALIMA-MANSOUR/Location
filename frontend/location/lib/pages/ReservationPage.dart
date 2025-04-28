@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_braintree/flutter_braintree.dart';
 
 class ReservationPage extends StatefulWidget {
   const ReservationPage({super.key});
