@@ -1,3 +1,7 @@
+// ignore: duplicate_ignore
+// ignore: file_names
+// ignore_for_file: use_build_context_synchronously, library_private_types_in_public_api, file_names
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -36,7 +40,7 @@ class _ReservationPageState extends State<ReservationPage> {
     int nombreJours = _calculerNombreJours(dateDebutController.text, dateFinController.text);
     double total = prixParJour * nombreJours;
 
-    void _recalculerTotal() {
+    void recalculerTotal() {
       setState(() {
         nombreJours = _calculerNombreJours(dateDebutController.text, dateFinController.text);
         total = prixParJour * nombreJours;
@@ -58,7 +62,7 @@ class _ReservationPageState extends State<ReservationPage> {
                     decoration: const InputDecoration(labelText: 'Date début (yyyy-MM-dd)'),
                     onChanged: (value) {
                       setState(() {
-                        _recalculerTotal();
+                        recalculerTotal();
                       });
                     },
                   ),
@@ -67,7 +71,7 @@ class _ReservationPageState extends State<ReservationPage> {
                     decoration: const InputDecoration(labelText: 'Date fin (yyyy-MM-dd)'),
                     onChanged: (value) {
                       setState(() {
-                        _recalculerTotal();
+                        recalculerTotal();
                       });
                     },
                   ),
@@ -166,9 +170,7 @@ class _ReservationPageState extends State<ReservationPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Montant à payer: ${reservation['total']}'),
-                // Vous pouvez intégrer un widget Braintree ici pour le paiement
-                // Exemple avec une zone de paiement qui pourrait être liée au token
-              ],
+            ],
             ),
             actions: [
               TextButton(
