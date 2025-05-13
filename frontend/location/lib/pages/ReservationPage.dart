@@ -17,7 +17,7 @@ class _ReservationPageState extends State<ReservationPage> {
   late Future<List<Map<String, dynamic>>> reservations;
 
   Future<List<Map<String, dynamic>>> fetchReservations() async {
-    final response = await http.get(Uri.parse('http://172.20.10.8:3000/consultereserv'));
+    final response = await http.get(Uri.parse('http://localhost:3000/consultereserv'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
@@ -120,7 +120,7 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   Future<void> _updateReservation(int id, int materielId, String dateDebut, String dateFin, double prix, double total) async {
-    final url = Uri.parse('http://172.20.10.8:3000/modifreserv/$id');
+    final url = Uri.parse('http://localhost:3000/modifreserv/$id');
 
     final response = await http.put(
       url,
@@ -149,7 +149,7 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   Future<String> _fetchClientToken() async {
-    final response = await http.get(Uri.parse('http://172.20.10.8:3000/token'));
+    final response = await http.get(Uri.parse('http://localhost:3000/token'));
     
     if (response.statusCode == 200) {
       return response.body;  // Le token client généré par votre backend
@@ -199,7 +199,7 @@ class _ReservationPageState extends State<ReservationPage> {
     String paymentMethodNonce = '';  // Remplacez par la logique pour obtenir le nonce
 
     final response = await http.post(
-      Uri.parse('http://172.20.10.8:3000/checkout'),
+      Uri.parse('http://localhost:3000/checkout'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'amount': reservation['total'].toString(),
@@ -237,44 +237,56 @@ class _ReservationPageState extends State<ReservationPage> {
             return const Center(child: Text('Aucune réservation à afficher.'));
           }
 
-          return ListView.builder(
-            itemCount: snapshot.data!.length,
-            itemBuilder: (context, index) {
-              final reservation = snapshot.data![index];
-              return Card(
-                margin: const EdgeInsets.all(8),
-                child: ListTile(
-                  title: Text(reservation['nom_materiel'] ?? ''),
-                  subtitle: Text(
-                    "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icône pour éditer la réservation
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          _showEditDialog(context, reservation);
-                        },
-                      ),
-                      // Icône de paiement uniquement si le statut est "confirmée"
-                      if (reservation['statut'] == 'confirmee')
-                        IconButton(
-                          icon: const Icon(Icons.payment),
-                          onPressed: () {
-                            _showPaymentDialog(context, reservation);
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+      return ListView.builder(
+  itemCount: snapshot.data!.length,
+  itemBuilder: (context, index) {
+    final reservation = snapshot.data![index];
+    return Card(
+      margin: const EdgeInsets.all(8),
+      child: ListTile(
+        title: Text(reservation['nom_materiel'] ?? ''),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            // Affichage du statut
+            Text(
+              'Statut: ${reservation['statut'] ?? 'Inconnu'}',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icône pour éditer la réservation, uniquement si le statut est "en attente"
+            if (reservation['statut'] == 'en_attente')
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  _showEditDialog(context, reservation);
+                },
+              ),
+            // Icône de paiement uniquement si le statut est "confirmée"
+            if (reservation['statut'] == 'confirmee')
+              IconButton(
+                icon: const Icon(Icons.payment),
+                onPressed: () {
+                  _showPaymentDialog(context, reservation);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+  },
       ),
     );
   }
