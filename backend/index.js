@@ -15,8 +15,10 @@ app.use(express.json());
 app.get('/materiels', materielsController.getAllMateriels);
 
 app.post('/locations', locationsController.createLocation);
+
 app.get('/token', braintreeController.generateToken);
-app.post('/checkout', braintreeController.processPayment);
+app.post('/porfeuille', braintreeController.porfeuille);
+app.post('/recupererCarteParId', braintreeController.recupererCarteParId);
 app.get('/consultereserv', locationsController.getAllLocations);
 app.put('/modifreserv/:id', locationsController.updateLocation);
 app.get('/reservations', adminController.getAllReservations);

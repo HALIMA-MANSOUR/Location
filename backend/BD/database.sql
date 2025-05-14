@@ -6,6 +6,7 @@ CREATE TABLE users (
     mot_de_passe VARCHAR(255) NOT NULL,
     role ENUM('client', 'admin') DEFAULT 'client',
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  
 );
 
 CREATE TABLE categories (
@@ -37,3 +38,11 @@ CREATE TABLE locations (
 );
 ALTER TABLE locations
 ADD COLUMN prix,total DECIMAL(10,2) AFTER statut;
+CREATE TABLE cartes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cardNumber VARCHAR(20) NOT NULL UNIQUE,
+  expirationDate VARCHAR(7) NOT NULL,
+  cvv VARCHAR(255) NOT NULL,
+  email VARCHAR(100) NOT NULL
+);
+

@@ -1,6 +1,7 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');  // Assurez-vous d'utiliser mysql2 avec promesses
 
-const connection = mysql.createConnection({
+// Créer une connexion à la base de données avec le support des promesses
+const connection = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: '',
@@ -8,12 +9,5 @@ const connection = mysql.createConnection({
   dateStrings: true,
 });
 
-connection.connect((err) => {
-  if (err) {
-    console.error('Erreur de connexion à la base de données :', err);
-    return;
-  }
-  console.log('Connecté à la base de données MySQL ✅');
-});
-
+// Exporter la connexion pour l'utiliser ailleurs dans le code
 module.exports = connection;
