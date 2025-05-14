@@ -61,6 +61,8 @@ void updateStatus(Reservation reservation, String newStatus) async {
         return Colors.red;
       case 'terminee':
         return Colors.blue;
+          case 'payee':
+        return const Color.fromARGB(255, 243, 33, 180);
       case 'en_attente':
       default:
         return Colors.orange;
@@ -113,7 +115,7 @@ void updateStatus(Reservation reservation, String newStatus) async {
   value: r.statut,
   style: TextStyle(color: _getStatusColor(r.statut)),
   dropdownColor: Colors.white,
-  items: ['confirmee', 'terminee', 'annulee', 'en_attente']
+  items: ['confirmee', 'terminee','payee' ,'annulee', 'en_attente']
       .map((status) {
     return DropdownMenuItem<String>(
       value: status,

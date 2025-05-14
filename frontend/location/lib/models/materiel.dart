@@ -4,13 +4,14 @@ class Materiel {
   final String description;
   final String imageUrl;
   final double prixJournalier;
-
+final int? categoryId;
   Materiel({
     required this.id,
     required this.nom,
     required this.description,
     required this.imageUrl,
     required this.prixJournalier,
+    this.categoryId,
   });
 
  factory Materiel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +22,7 @@ class Materiel {
     description: json['description'] ?? '',
     imageUrl: json['image_url'] ?? '',
    prixJournalier: _parseToDouble(json['prix_journalier']),
+    categoryId: json['categoryId'], 
 
   );
 }

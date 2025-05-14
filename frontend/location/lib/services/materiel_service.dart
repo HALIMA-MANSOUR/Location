@@ -6,16 +6,21 @@ class MaterielService {
   final String apiUrl = "http://localhost:3000/materiels"; 
   final String reservationUrl = "http://localhost:3000/locations";
 
-  Future<List<Materiel>> getMateriels() async {
-    final response = await http.get(Uri.parse(apiUrl));
-
-    if (response.statusCode == 200) {
-      List jsonResponse = json.decode(response.body);
-      return jsonResponse.map((m) => Materiel.fromJson(m)).toList();
-    } else {
-      throw Exception('Erreur de chargement des matériels');
-    }
+Future<List<Materiel>> getMateriels([int? categoryId]) async {
+  String url = apiUrl;
+  if (categoryId != null) {
+    url += '?category_id=$categoryId'; // ou le nom exact du paramètre attendu par ton backend
   }
+
+  final response = await http.get(Uri.parse(url));
+
+  if (response.statusCode == 200) {
+    List jsonResponse = json.decode(response.body);
+    return jsonResponse.map((m) => Materiel.fromJson(m)).toList();
+  } else {
+    throw Exception('Erreur de chargement des matériels');
+  }
+}
 
   // Fonction pour créer une réservation avec prix
   Future<void> createReservation(int materielId, String dateDebut, String dateFin, double prix,double total) async {

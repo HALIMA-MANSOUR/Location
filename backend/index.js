@@ -13,6 +13,7 @@ const adminController =require('./Contoller/adminController');
 app.use(express.json());
 
 app.get('/materiels', materielsController.getAllMateriels);
+app.get('/Catgmateriels', materielsController.getAllCategories);
 
 app.post('/locations', locationsController.createLocation);
 

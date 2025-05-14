@@ -200,12 +200,16 @@ void _processPayment(Map<String, dynamic> reservation, String token) async {
       Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'montant': reservation['total'].toString(),  // Envoi du montant total à payer dans le corps
+        'montant': reservation['total'].toString(),
+         'locationId': reservation['id'], 
       }),
     );
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
+       setState(() {
+        reservations = fetchReservations(); // force la mise à jour de la liste
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}')),
       );
