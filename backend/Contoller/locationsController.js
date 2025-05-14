@@ -1,68 +1,58 @@
 const db = require('../BD/db');
 
-
-const createLocation = (req, res) => {
-  const { materiel_id, date_debut, date_fin, prix ,total} = req.body; // 🔥 Ajout de prix ici
+// Fonction pour créer une location
+const createLocation = async (req, res) => {
+  const { materiel_id, date_debut, date_fin, prix, total } = req.body; // 🔥 Ajout de prix ici
   const user_id = 1;
 
-  // 1. Vérifier si le matériel est disponible
-  const checkDisponibiliteSql = `
-    SELECT disponible FROM materiels WHERE id = ?
-  `;
+  try {
+    // 1. Vérifier si le matériel est disponible
+    const [disponibiliteResults] = await db.query('SELECT disponible FROM materiels WHERE id = ?', [materiel_id]);
 
-  db.query(checkDisponibiliteSql, [materiel_id], (err, results) => {
-    if (err) {
-      console.error('Erreur lors de la vérification de disponibilité :', err);
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
-
-    if (results.length === 0) {
+    if (disponibiliteResults.length === 0) {
       return res.status(404).json({ message: 'Matériel introuvable' });
     }
 
-    const disponible = results[0].disponible;
+    const disponible = disponibiliteResults[0].disponible;
     if (!disponible) {
       return res.status(400).json({ message: 'Ce matériel n\'est pas disponible actuellement' });
     }
 
     // 2. Si disponible, procéder à l'insertion
-    const insertSql = `
-      INSERT INTO locations (user_id, materiel_id, date_debut, date_fin, prix,total)
-      VALUES (?, ?, ?, ?, ?,?)  -- 🔥 On ajoute prix ici aussi
-    `;
+    const [result] = await db.query(
+      'INSERT INTO locations (user_id, materiel_id, date_debut, date_fin, prix, total) VALUES (?, ?, ?, ?, ?, ?)',
+      [user_id, materiel_id, date_debut, date_fin, prix, total]
+    );
 
-    db.query(insertSql, [user_id, materiel_id, date_debut, date_fin, prix,total], (err, result) => {
-      if (err) {
-        console.error('Erreur lors de la création de la location:', err);
-        return res.status(500).json({ error: 'Erreur serveur' });
-      }
-
-      res.status(201).json({
-        message: 'Location créée avec succès',
-        locationId: result.insertId
-      });
+    res.status(201).json({
+      message: 'Location créée avec succès',
+      locationId: result.insertId
     });
-  });
+
+  } catch (err) {
+    console.error('Erreur lors de la création de la location:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 };
 
-
-const getAllLocations = (req, res) => {
-  const sql = `
-    SELECT l.*, m.nom AS nom_materiel, u.nom AS nom_utilisateur
-    FROM locations l
-    JOIN materiels m ON l.materiel_id = m.id
-    JOIN users u ON l.user_id = u.id
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Erreur lors de la récupération des locations:', err);
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
+// Fonction pour obtenir toutes les locations
+const getAllLocations = async (req, res) => {
+  try {
+    const [results] = await db.query(
+      `SELECT l.*, m.nom AS nom_materiel, u.nom AS nom_utilisateur
+       FROM locations l
+       JOIN materiels m ON l.materiel_id = m.id
+       JOIN users u ON l.user_id = u.id`
+    );
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Erreur lors de la récupération des locations:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 };
-const updateLocation = (req, res) => {
+
+// Fonction pour mettre à jour une location
+const updateLocation = async (req, res) => {
   const id = req.params.id; // récupérer l'ID de la réservation
   const { materiel_id, date_debut, date_fin } = req.body;
 
@@ -82,98 +72,71 @@ const updateLocation = (req, res) => {
     return res.status(400).json({ message: "La date de fin doit être après la date de début" });
   }
 
-  // Vérifier la disponibilité du matériel
-  const checkDisponibiliteSql = `
-    SELECT disponible FROM materiels WHERE id = ?
-  `;
-  db.query(checkDisponibiliteSql, [materiel_id], (err, results) => {
-    if (err) {
-      console.error('Erreur lors de la vérification de disponibilité :', err);
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
+  try {
+    // Vérifier la disponibilité du matériel
+    const [disponibiliteResults] = await db.query('SELECT disponible FROM materiels WHERE id = ?', [materiel_id]);
 
-    if (results.length === 0) {
+    if (disponibiliteResults.length === 0) {
       return res.status(404).json({ message: 'Matériel introuvable' });
     }
 
-    const { disponible } = results[0];
+    const { disponible } = disponibiliteResults[0];
     if (!disponible) {
       return res.status(400).json({ message: 'Ce matériel n\'est pas disponible actuellement' });
     }
 
     // Vérifier s'il y a un chevauchement avec d'autres réservations
-    const checkOverlapSql = `
-      SELECT * FROM locations 
-      WHERE materiel_id = ? AND (
-        (date_debut BETWEEN ? AND ?) OR 
-        (date_fin BETWEEN ? AND ?)
-      ) AND id != ?
-    `;
+    const [overlapResults] = await db.query(
+      `SELECT * FROM locations 
+       WHERE materiel_id = ? AND (
+         (date_debut BETWEEN ? AND ?) OR 
+         (date_fin BETWEEN ? AND ?)
+       ) AND id != ?`, 
+      [materiel_id, date_debut, date_fin, date_debut, date_fin, id]
+    );
 
-    db.query(checkOverlapSql, [materiel_id, date_debut, date_fin, date_debut, date_fin, id], (err, overlapResults) => {
-      if (err) {
-        console.error('Erreur lors de la vérification des chevauchements de dates:', err);
-        return res.status(500).json({ error: 'Erreur serveur' });
-      }
+    if (overlapResults.length > 0) {
+      return res.status(400).json({ message: 'Ce matériel est déjà réservé pour cette période' });
+    }
 
-      if (overlapResults.length > 0) {
-        return res.status(400).json({ message: 'Ce matériel est déjà réservé pour cette période' });
-      }
+    // Récupérer le prix de la réservation existante dans la table "locations"
+    const [prixResults] = await db.query('SELECT prix FROM locations WHERE id = ?', [id]);
 
-      // Récupérer le prix de la réservation existante dans la table "locations"
-      const getPrixSql = `
-        SELECT prix FROM locations WHERE id = ?
-      `;
-      db.query(getPrixSql, [id], (err, prixResults) => {
-        if (err) {
-          console.error('Erreur lors de la récupération du prix:', err);
-          return res.status(500).json({ error: 'Erreur serveur' });
-        }
+    if (prixResults.length === 0) {
+      return res.status(404).json({ message: 'Réservation introuvable' });
+    }
 
-        if (prixResults.length === 0) {
-          return res.status(404).json({ message: 'Réservation introuvable' });
-        }
+    const { prix } = prixResults[0];
 
-        const { prix } = prixResults[0];
+    // Calcul du nombre de jours
+    const msPerDay = 24 * 60 * 60 * 1000; // millisecondes par jour
+    const nombreDeJours = Math.round((fin - debut) / msPerDay);
 
-        // Calcul du nombre de jours
-        const msPerDay = 24 * 60 * 60 * 1000; // millisecondes par jour
-        const nombreDeJours = Math.round((fin - debut) / msPerDay);
+    // Calcul du total
+    const total = nombreDeJours * prix;
 
-        // Calcul du total
-        const total = nombreDeJours * prix;
+    // Mise à jour de la réservation avec le nouveau total
+    const [updateResult] = await db.query(
+      `UPDATE locations SET materiel_id = ?, date_debut = ?, date_fin = ?, total = ? WHERE id = ?`,
+      [materiel_id, date_debut, date_fin, total, id]
+    );
 
-        // Mise à jour de la réservation avec le nouveau total
-        const updateSql = `
-          UPDATE locations
-          SET materiel_id = ?, date_debut = ?, date_fin = ?, total = ?
-          WHERE id = ?
-        `;
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ message: 'Réservation introuvable' });
+    }
 
-        db.query(updateSql, [materiel_id, date_debut, date_fin, total, id], (err, result) => {
-          if (err) {
-            console.error('Erreur lors de la mise à jour de la réservation:', err);
-            return res.status(500).json({ error: 'Erreur serveur' });
-          }
-
-          if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Réservation introuvable' });
-          }
-
-          res.status(200).json({
-            message: 'Réservation mise à jour avec succès',
-            locationId: id,
-            nombreDeJours: nombreDeJours,
-            total: total
-          });
-        });
-      });
+    res.status(200).json({
+      message: 'Réservation mise à jour avec succès',
+      locationId: id,
+      nombreDeJours: nombreDeJours,
+      total: total
     });
-  });
+
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour de la réservation:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 };
-
-
-
 
 module.exports = {
   createLocation,

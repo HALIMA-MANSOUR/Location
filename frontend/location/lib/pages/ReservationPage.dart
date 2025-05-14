@@ -194,33 +194,33 @@ class _ReservationPageState extends State<ReservationPage> {
     });
   }
 
-  void _processPayment(Map<String, dynamic> reservation, String token) async {
-    // Supposons que vous ayez le nonce de Braintree après l'intégration du widget Braintree
-    String paymentMethodNonce = '';  // Remplacez par la logique pour obtenir le nonce
-
+void _processPayment(Map<String, dynamic> reservation, String token) async {
+  try {
     final response = await http.post(
-      Uri.parse('http://localhost:3000/checkout'),
+      Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'amount': reservation['total'].toString(),
-        'paymentMethodNonce': paymentMethodNonce,
+        'montant': reservation['total'].toString(),  // Envoi du montant total à payer dans le corps
       }),
     );
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
-      // Si le paiement est un succès
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}')),
       );
-      // Vous pouvez mettre à jour l'état de la réservation ici si nécessaire
     } else {
-      // En cas d'erreur de paiement
+      final errorMessage = jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du paiement : ${jsonDecode(response.body)['message']}')),
+        SnackBar(content: Text('Erreur lors du paiement : $errorMessage')),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur de connexion : $e')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -264,16 +264,14 @@ class _ReservationPageState extends State<ReservationPage> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icône pour éditer la réservation, uniquement si le statut est "en attente"
-            if (reservation['statut'] == 'en_attente')
+  if (reservation['statut'] == 'en_attente')
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () {
                   _showEditDialog(context, reservation);
                 },
               ),
-            // Icône de paiement uniquement si le statut est "confirmée"
-            if (reservation['statut'] == 'confirmee')
+ if (reservation['statut'] == 'confirmee')
               IconButton(
                 icon: const Icon(Icons.payment),
                 onPressed: () {
