@@ -16,6 +16,7 @@ app.get('/materiels', materielsController.getAllMateriels);
 app.get('/Catgmateriels', materielsController.getAllCategories);
 
 app.post('/locations', locationsController.createLocation);
+app.delete('/deletelocation/:id', locationsController.deleteLocation);
 
 app.get('/token', braintreeController.generateToken);
 app.post('/porfeuille', braintreeController.porfeuille);

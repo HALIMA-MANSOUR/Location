@@ -194,37 +194,80 @@ class _ReservationPageState extends State<ReservationPage> {
     });
   }
 
-void _processPayment(Map<String, dynamic> reservation, String token) async {
-  try {
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'montant': reservation['total'].toString(),
-         'locationId': reservation['id'], 
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
-       setState(() {
-        reservations = fetchReservations(); // force la mise à jour de la liste
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}')),
+  void _processPayment(Map<String, dynamic> reservation, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'montant': reservation['total'].toString(),
+           'locationId': reservation['id'], 
+        }),
       );
-    } else {
-      final errorMessage = jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+         setState(() {
+          reservations = fetchReservations(); // force la mise à jour de la liste
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}')),
+        );
+      } else {
+        final errorMessage = jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du paiement : $errorMessage')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du paiement : $errorMessage')),
+        SnackBar(content: Text('Erreur de connexion : $e')),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erreur de connexion : $e')),
-    );
   }
+void _showDeleteConfirmationDialog(BuildContext context, int id) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Confirmation de suppression'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer cette réservation ?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Ferme le dialogue sans faire de suppression
+            },
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _deleteReservation(id);  // Appel de la méthode de suppression
+              Navigator.of(context).pop(); // Ferme le dialogue après la suppression
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }
+
+  Future<void> _deleteReservation(int id) async {
+    final response = await http.delete(Uri.parse('http://localhost:3000/deletelocation/$id'));
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Réservation supprimée avec succès')),
+      );
+      setState(() {
+        reservations = fetchReservations();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression : ${jsonDecode(response.body)['message']}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,54 +284,65 @@ void _processPayment(Map<String, dynamic> reservation, String token) async {
             return const Center(child: Text('Aucune réservation à afficher.'));
           }
 
-      return ListView.builder(
-  itemCount: snapshot.data!.length,
-  itemBuilder: (context, index) {
-    final reservation = snapshot.data![index];
-    return Card(
-      margin: const EdgeInsets.all(8),
-      child: ListTile(
-        title: Text(reservation['nom_materiel'] ?? ''),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Affichage du statut
-            Text(
-              'Statut: ${reservation['statut'] ?? 'Inconnu'}',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-  if (reservation['statut'] == 'en_attente')
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  _showEditDialog(context, reservation);
-                },
-              ),
- if (reservation['statut'] == 'confirmee')
-              IconButton(
-                icon: const Icon(Icons.payment),
-                onPressed: () {
-                  _showPaymentDialog(context, reservation);
-                },
-              ),
-          ],
-        ),
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final reservation = snapshot.data![index];
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  title: Text(reservation['nom_materiel'] ?? ''),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Affichage du statut
+                      Text(
+                        'Statut: ${reservation['statut'] ?? 'Inconnu'}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                trailing: Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    if (reservation['statut'] == 'en_attente') ...[
+      // Affichage du bouton "Modifier"
+      IconButton(
+        icon: const Icon(Icons.edit),
+        onPressed: () {
+          _showEditDialog(context, reservation);
+        },
       ),
-    );
-  },
-);
-  },
+      // Affichage du bouton "Supprimer"
+      IconButton(
+        icon: const Icon(Icons.delete),
+        onPressed: () {
+         _showDeleteConfirmationDialog(context, reservation['id']);
+        },
+      ),
+    ],
+    if (reservation['statut'] == 'confirmee') ...[
+      // Affichage du bouton "Payer"
+      IconButton(
+        icon: const Icon(Icons.payment),
+        onPressed: () {
+          _showPaymentDialog(context, reservation);
+        },
+      ),
+    ],
+  ],
+),
+ ),
+              );
+            },
+          );
+        },
       ),
     );
   }

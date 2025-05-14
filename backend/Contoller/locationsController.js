@@ -138,8 +138,31 @@ const updateLocation = async (req, res) => {
   }
 };
 
+const deleteLocation = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Vérifier si la location existe avant de la supprimer
+    const [locationResult] = await db.query('SELECT * FROM locations WHERE id = ?', [id]);
+
+    if (locationResult.length === 0) {
+      return res.status(404).json({ message: 'Réservation non trouvée' });
+    }
+
+    // Supprimer la location
+    await db.query('DELETE FROM locations WHERE id = ?', [id]);
+
+    res.status(200).json({ message: 'Réservation supprimée avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression de la réservation:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+
 module.exports = {
   createLocation,
   getAllLocations,
-  updateLocation
+  updateLocation,
+  deleteLocation
 };
