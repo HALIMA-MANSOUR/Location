@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/materiel.dart';
 
 class MaterielService {
-  final String apiUrl = "http://localhost:3000/materiels"; 
-  final String reservationUrl = "http://localhost:3000/locations";
+  final String apiUrl = "http://172.20.10.8:3000/materiels"; 
+  final String reservationUrl = "http://172.20.10.8:3000/locations";
 
 Future<List<Materiel>> getMateriels([int? categoryId]) async {
   String url = apiUrl;

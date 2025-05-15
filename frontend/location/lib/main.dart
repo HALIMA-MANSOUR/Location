@@ -9,7 +9,7 @@ void main() {
       debugShowCheckedModeBanner: false,
       title: 'Location de Matériels',
       theme: ThemeData(primarySwatch: Colors.green),
-      home:  const MaterielListPage(),
+      home:   AdminReservationsPage(),
     ),
   );
 }

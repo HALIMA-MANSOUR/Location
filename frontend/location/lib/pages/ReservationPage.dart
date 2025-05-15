@@ -17,7 +17,7 @@ class _ReservationPageState extends State<ReservationPage> {
   late Future<List<Map<String, dynamic>>> reservations;
 
   Future<List<Map<String, dynamic>>> fetchReservations() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/consultereserv'));
+    final response = await http.get(Uri.parse('http://172.20.10.8:3000/consultereserv'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
@@ -120,7 +120,7 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   Future<void> _updateReservation(int id, int materielId, String dateDebut, String dateFin, double prix, double total) async {
-    final url = Uri.parse('http://localhost:3000/modifreserv/$id');
+    final url = Uri.parse('http://172.20.10.8:3000/modifreserv/$id');
 
     final response = await http.put(
       url,
@@ -149,7 +149,7 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   Future<String> _fetchClientToken() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/token'));
+    final response = await http.get(Uri.parse('http://172.20.10.8:3000/token'));
     
     if (response.statusCode == 200) {
       return response.body;  // Le token client généré par votre backend
@@ -197,7 +197,7 @@ class _ReservationPageState extends State<ReservationPage> {
   void _processPayment(Map<String, dynamic> reservation, String token) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
+        Uri.parse('http://172.20.10.8:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'montant': reservation['total'].toString(),
@@ -253,7 +253,7 @@ void _showDeleteConfirmationDialog(BuildContext context, int id) {
 }
 
   Future<void> _deleteReservation(int id) async {
-    final response = await http.delete(Uri.parse('http://localhost:3000/deletelocation/$id'));
+    final response = await http.delete(Uri.parse('http://172.20.10.8:3000/deletelocation/$id'));
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
