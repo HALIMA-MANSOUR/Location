@@ -62,14 +62,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_braintree:
-    dependency: "direct main"
-    description:
-      name: flutter_braintree
-      sha256: d58a91212c21f97aa1e8fcbcbb394744eb5997c7ba929274daf3cf903ceef8db
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.0"
   flutter_lints:
     dependency: "direct dev"
     description:
