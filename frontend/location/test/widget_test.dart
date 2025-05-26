@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:location/pages/materiel_list_page.dart'; // Assure-toi que ce chemin est correct
+import 'package:location/pages/Materiel_list_page.dart'; // Assure-toi que ce chemin est correct
 
 void main() {
   testWidgets('Test que la page MaterielListPage se charge correctement', (WidgetTester tester) async {

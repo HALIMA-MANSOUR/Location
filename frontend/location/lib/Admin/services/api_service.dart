@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import './../models/reservation.dart';
 
-const String baseUrl = 'http://172.20.10.8:3000'; 
+const String baseUrl = 'http://localhost:3000'; 
 
 class ApiService {
   static Future<List<Reservation>> fetchReservations() async {
