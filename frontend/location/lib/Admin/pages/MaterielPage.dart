@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import './../models/Materiel.dart';
 import './../services/materielService.dart';
@@ -28,20 +29,17 @@ class _MaterielPageState extends State<MaterielPage> {
 
   void _showMaterielForm({Materiel? materiel}) {
     final nomController = TextEditingController(text: materiel?.nom ?? '');
-    final prixController = TextEditingController(
-        text: materiel?.prixJournalier.toString() ?? '');
-    final categorieIdController = TextEditingController(
-        text: materiel?.categorieId.toString() ?? '');
+    final prixController = TextEditingController(text: materiel?.prixJournalier.toString() ?? '');
+    final categorieIdController = TextEditingController(text: materiel?.categorieId.toString() ?? '');
 
     File? selectedImage;
+    XFile? webImage;
     final picker = ImagePicker();
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(materiel == null
-            ? 'Ajouter un matériel'
-            : 'Modifier le matériel'),
+        title: Text(materiel == null ? 'Ajouter un matériel' : 'Modifier le matériel'),
         content: StatefulBuilder(
           builder: (context, setState) => SingleChildScrollView(
             child: Column(
@@ -64,22 +62,33 @@ class _MaterielPageState extends State<MaterielPage> {
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final pickedFile =
-                        await picker.pickImage(source: ImageSource.gallery);
+                    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
                     if (pickedFile != null) {
                       setState(() {
-                        selectedImage = File(pickedFile.path);
+                        if (kIsWeb) {
+                          webImage = pickedFile;
+                        } else {
+                          selectedImage = File(pickedFile.path);
+                        }
                       });
                     }
                   },
                   icon: const Icon(Icons.image),
                   label: const Text('Sélectionner une image'),
                 ),
-                if (selectedImage != null)
+                if (selectedImage != null && !kIsWeb)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Image.file(
                       selectedImage!,
+                      height: 100,
+                    ),
+                  ),
+                if (webImage != null && kIsWeb)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Image.network(
+                      webImage!.path,
                       height: 100,
                     ),
                   ),
@@ -93,34 +102,39 @@ class _MaterielPageState extends State<MaterielPage> {
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              final nom = nomController.text;
-              final prix = double.tryParse(prixController.text) ?? 0.0;
-              final categorieId = int.tryParse(categorieIdController.text) ?? 0;
+        onPressed: () async {
+  final nom = nomController.text;
+  final prix = double.tryParse(prixController.text) ?? 0.0;
+  final categorieId = int.tryParse(categorieIdController.text) ?? 0;
 
-              if (materiel == null) {
-                // Ajout
-                final success = await MaterielService.addMaterielWithImage(
-                  nom: nom,
-                  prixJournalier: prix,
-                  categorie_id: categorieId,
-                  imageFile: selectedImage,
-                );
-                if (success) Navigator.pop(context);
-              } else {
-                // Modification
-                final updates = {
-                  'nom': nom,
-                  'prix_journalier': prix,
-                  'categorie_id': categorieId,
-                };
-                await MaterielService.updateMateriel(materiel.id, updates);
-                Navigator.pop(context);
-              }
+  if (materiel == null) {
+    // Ajout
+    final success = await MaterielService.addMaterielWithImage(
+      nom: nom,
+      prixJournalier: prix,
+      categorie_id: categorieId,
+      imageFile: kIsWeb ? null : selectedImage,
+      webImage: kIsWeb ? webImage : null,
+    );
 
-              _refresh();
-            },
-            child: const Text('Enregistrer'),
+    if (success) Navigator.pop(context);
+  } else {
+    // Modification
+    final success = await MaterielService.updateMaterielWithImage(
+      id: materiel.id,
+      nom: nom,
+      prixJournalier: prix,
+      categorie_id: categorieId,
+      imageFile: kIsWeb ? null : selectedImage,
+      webImage: kIsWeb ? webImage : null,
+    );
+
+    if (success) Navigator.pop(context);
+  }
+
+  _refresh();
+},
+child: const Text('Enregistrer'),
           ),
         ],
       ),
@@ -191,8 +205,7 @@ class _MaterielPageState extends State<MaterielPage> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   leading: m.imageUrl != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(10),
