@@ -171,7 +171,7 @@ child: const Text('Enregistrer'),
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('Matériels disponibles'),
-        backgroundColor: Colors.indigo,
+          backgroundColor: Colors.blueAccent,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showMaterielForm(),

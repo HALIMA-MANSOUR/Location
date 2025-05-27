@@ -1,6 +1,10 @@
 // ignore_for_file: use_build_context_synchronously, library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
+import 'package:location/Admin/pages/dashboard_admin.dart';
+import 'package:location/Admin/pages/login_page.dart';
+import 'package:location/pages/Profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materiel.dart';
 import '../services/materiel_service.dart';
 import 'package:location/pages/ReservationPage.dart';
@@ -11,10 +15,10 @@ class MaterielListPage extends StatefulWidget {
   const MaterielListPage({super.key});
 
   @override
-  _MaterielListPageState createState() => _MaterielListPageState();
+  MaterielListPageState createState() => MaterielListPageState();
 }
 
-class _MaterielListPageState extends State<MaterielListPage> {
+class MaterielListPageState extends State<MaterielListPage> {
   late Future<List<Materiel>> materiels;
   late Future<List<Category>> categories;
   int? selectedCategoryId;
@@ -147,26 +151,55 @@ class _MaterielListPageState extends State<MaterielListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('Matériels disponibles'),
-        centerTitle: false,
-        elevation: 2,
-        backgroundColor: Colors.indigo,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.book_online),
-            tooltip: 'Mes réservations',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ReservationPage()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
+      backgroundColor: Colors.white,
+     appBar: AppBar(
+  title: const Text('Matériels disponibles'),
+  centerTitle: false,
+  elevation: 2,
+    backgroundColor: Colors.blueAccent,
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.book_online),
+      tooltip: 'Mes réservations',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ReservationPage()),
+        );
+      },
+    ),
+  IconButton(
+  icon: const Icon(Icons.account_circle),
+  tooltip: 'Profil / Connexion',
+  onPressed: () async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (isLoggedIn) {
+      final role = prefs.getString('role') ?? 'client'; // ou 'user' par défaut
+
+      if (role == 'admin') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardAdmin()),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilPage()),
+        );
+      }
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
+  },
+)
+ ],
+),
+  body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),

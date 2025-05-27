@@ -1,6 +1,8 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -66,11 +68,15 @@ class MaterielService {
       return true;
     } else {
       final res = await response.stream.bytesToString();
-      print('Erreur backend: ${response.statusCode} $res');
+      if (kDebugMode) {
+        print('Erreur backend: ${response.statusCode} $res');
+      }
       return false;
     }
   } catch (e) {
-    print('Erreur modification: $e');
+    if (kDebugMode) {
+      print('Erreur modification: $e');
+    }
     return false;
   }
 }
@@ -86,6 +92,7 @@ class MaterielService {
   static Future<bool> addMaterielWithImage({
     required String nom,
     required double prixJournalier,
+ 
     required int categorie_id,
     File? imageFile,
     XFile? webImage,
@@ -123,11 +130,15 @@ class MaterielService {
         return true;
       } else {
         final res = await response.stream.bytesToString();
-        print('Erreur backend: ${response.statusCode} $res');
+        if (kDebugMode) {
+          print('Erreur backend: ${response.statusCode} $res');
+        }
         return false;
       }
     } catch (e) {
-      print('Erreur lors de l\'ajout: $e');
+      if (kDebugMode) {
+        print('Erreur lors de l\'ajout: $e');
+      }
       return false;
     }
   }

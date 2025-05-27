@@ -38,7 +38,10 @@ dependencies:
   fluttertoast: ^8.2.4
   google_fonts: ^6.1.0
   image_picker: ^1.0.4
- 
+  http_parser: ^4.1.2
+  mime: ^2.0.0
+  path: ^1.9.1
+  shared_preferences: ^2.0.15
 
 dev_dependencies:
   flutter_test:

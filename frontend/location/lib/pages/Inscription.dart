@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:location/Admin/pages/login_page.dart';
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -17,28 +19,57 @@ class _RegisterPageState extends State<RegisterPage> {
   String email = '';
   String motDePasse = '';
 
-  Future<void> registerUser() async {
-    final url = Uri.parse('http://localhost:3000/createUser');
+Future<void> registerUser() async {
+  final url = Uri.parse('http://localhost:3000/createUser');
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'nom': nom,
-        'email': email,
-        'mot_de_passe': motDePasse,
-      }),
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'nom': nom,
+      'email': email,
+      'mot_de_passe': motDePasse,
+    }),
+  );
+
+  final result = jsonDecode(response.body);
+
+  if (response.statusCode == 200 && result['success'] == true) {
+    // Affiche un message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result['message'] ?? 'Inscription réussie')),
     );
 
-    final result = jsonDecode(response.body);
+    // Redirige vers la page de connexion
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  } else {
+    // En cas d’échec
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result['message'] ?? 'Réponse inattendue')),
+      SnackBar(content: Text(result['message'] ?? 'Erreur lors de l’inscription')),
     );
   }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Retour',
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => LoginPage()),
+            );
+          },
+        ),
+        title: const Text('Inscription'),
+        backgroundColor: Colors.blueAccent,
+       ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -84,11 +115,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          registerUser();
-                        }
-                      },
+                    onPressed: () async {
+  if (_formKey.currentState!.validate()) {
+    await registerUser();
+  }
+},
+
                       style: ElevatedButton.styleFrom(
                         minimumSize: Size.fromHeight(50),
                         backgroundColor: Colors.blueAccent,

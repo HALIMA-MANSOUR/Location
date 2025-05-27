@@ -72,75 +72,85 @@ void updateStatus(Reservation reservation, String newStatus) async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Liste des Réservations')),
-      body: FutureBuilder<List<Reservation>>(
-        future: reservations,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Erreur: ${snapshot.error}'));
-          }
+  backgroundColor: Colors.white, // 🌟 Fond blanc pour le body
+  appBar: AppBar(
+    title: const Text('Liste des Réservations'),
+    backgroundColor: Colors.blueAccent, // 🌟 AppBar en bleu accent
+  ),
+  body: FutureBuilder<List<Reservation>>(
+    future: reservations,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (snapshot.hasError) {
+        return Center(child: Text('Erreur: ${snapshot.error}'));
+      }
 
-          final data = snapshot.data!;
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final r = data[index];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      final data = snapshot.data!;
+      return ListView.builder(
+        itemCount: data.length,
+        itemBuilder: (context, index) {
+          final r = data[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${r.nomMateriel} - ${r.nomUtilisateur}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Du ${r.dateDebut} au ${r.dateFin}'),
+                  Text('Total: ${r.total} DT'),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${r.nomMateriel} - ${r.nomUtilisateur}',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      const Text(
+                        'Statut:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      SizedBox(height: 8),
-                      Text('Du ${r.dateDebut} au ${r.dateFin}'),
-                      Text('Total: ${r.total} DT'),
-                      SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Statut:', style: TextStyle(fontWeight: FontWeight.w500)),
-    DropdownButton<String>(
-  value: r.statut,
-  style: TextStyle(color: _getStatusColor(r.statut)),
-  dropdownColor: Colors.white,
-  items: ['confirmee', 'terminee','payee' ,'annulee', 'en_attente']
-      .map((status) {
-    return DropdownMenuItem<String>(
-      value: status,
-      child: Text(
-        status,
-        style: TextStyle(color: _getStatusColor(status)),
-      ),
-    );
-  }).toList(),
-  onChanged: (newStatus) {
-    if (newStatus != null && newStatus != r.statut) {
-      updateStatus(r, newStatus);
-    }
-  },
-)
- ],
-                      ),
+                      DropdownButton<String>(
+                        value: r.statut,
+                        style: TextStyle(color: _getStatusColor(r.statut)),
+                        dropdownColor: Colors.white,
+                        items: ['confirmee', 'terminee', 'payee', 'annulee', 'en_attente']
+                            .map((status) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(
+                              status,
+                              style: TextStyle(color: _getStatusColor(status)),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (newStatus) {
+                          if (newStatus != null && newStatus != r.statut) {
+                            updateStatus(r, newStatus);
+                          }
+                        },
+                      )
                     ],
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           );
         },
-      ),
-    );
-  }
+      );
+    },
+  ),
+);
+ }
 }
