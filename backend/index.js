@@ -39,7 +39,7 @@ app.get('/reservations', adminController.getAllReservations);
 app.put('/reservations/:id', adminController.updateReservationStatus);
 app.post('/createUser', UserController.createUser);
 app.post('/ajoutmateriels', upload,materielsController.addMateriel);
-app.put('/modifmateriels/:id', materielsController.updateMateriel);
+app.put('/modifmateriels/:id', upload,materielsController.updateMateriel);
 app.delete('/dletemateriel/:id', materielsController.deleteMateriel);
 app.listen(PORT,'0.0.0.0', () => {
   console.log(`Le serveur est en cours d'exécution sur le port :${PORT}`);

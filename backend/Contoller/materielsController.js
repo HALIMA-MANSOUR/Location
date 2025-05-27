@@ -67,35 +67,46 @@ const imageFile = files.find(file => file.fieldname === 'image_url');
 
 const updateMateriel = async (req, res) => {
   const { id } = req.params;
-  const fields = req.body;
+  const { nom, description, prix_journalier, disponible, categorie_id } = req.body;
+  const { files } = req;
 
-  if (!id || Object.keys(fields).length === 0) {
-    return res.status(400).json({ message: 'ID et au moins un champ à mettre à jour sont requis' });
-  }
-
-  const allowedFields = ['nom', 'description', 'image_url', 'prix_journalier', 'disponible', 'categorie_id'];
-  const updates = [];
-  const values = [];
-
-  for (const key of allowedFields) {
-    if (fields[key] !== undefined) {
-      updates.push(`${key} = ?`);
-      values.push(fields[key]);
-    }
-  }
-
-  if (updates.length === 0) {
-    return res.status(400).json({ message: 'Aucun champ valide à mettre à jour' });
-  }
-
-  const sql = `UPDATE materiels SET ${updates.join(', ')} WHERE id = ?`;
-  values.push(id);
+  const imageFile = files?.find(file => file.fieldname === 'image_url');
+  const baseUrl = 'http://localhost:3000/';
+  const image_url = imageFile ? `${baseUrl}images/${imageFile.filename}` : null;
 
   try {
-    await db.execute(sql, values);
-    res.json({ message: 'Matériel mis à jour avec succès' });
+    // Récupérer l’ancien matériel
+    const [rows] = await db.execute('SELECT * FROM materiels WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Matériel introuvable' });
+    }
+
+    const ancien = rows[0];
+
+    // Mise à jour avec nouvelle image ou ancienne si pas changée
+    const sql = `
+      UPDATE materiels SET 
+        nom = ?, 
+        description = ?, 
+        image_url = ?, 
+        prix_journalier = ?, 
+        disponible = ?, 
+        categorie_id = ?
+      WHERE id = ?`;
+
+    await db.execute(sql, [
+      nom ?? ancien.nom,
+      description ?? ancien.description,
+      image_url ?? ancien.image_url,
+      prix_journalier ?? ancien.prix_journalier,
+      disponible ?? ancien.disponible,
+      categorie_id ?? ancien.categorie_id,
+      id,
+    ]);
+
+    res.status(200).json({ message: 'Matériel modifié' });
   } catch (err) {
-    console.error('Erreur mise à jour matériel:', err);
+    console.error('Erreur modification matériel:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
