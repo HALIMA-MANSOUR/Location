@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import './../models/Materiel.dart';
 
@@ -15,18 +16,12 @@ class MaterielService {
     }
   }
 
-  static Future<void> addMateriel(Map<String, dynamic> materiel) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/ajoutmateriels'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(materiel),
-    );
-    if (response.statusCode != 201) {
-      throw Exception('Erreur ajout matériel');
-    }
-  }
 
-  static Future<void> updateMateriel(int id, Map<String, dynamic> updates) async {
+
+  static Future<void> updateMateriel(
+    int id,
+    Map<String, dynamic> updates,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/modifmateriels/$id'),
       headers: {'Content-Type': 'application/json'},
@@ -43,4 +38,32 @@ class MaterielService {
       throw Exception('Erreur suppression matériel');
     }
   }
+static Future<bool> addMaterielWithImage({
+  required String nom,
+  required double prixJournalier,
+  required int categorie_id,
+  File? imageFile,
+}) async {
+  final uri = Uri.parse('$baseUrl/ajoutmateriels');
+  final request = http.MultipartRequest('POST', uri);
+
+  request.fields['nom'] = nom;
+  request.fields['prix_journalier'] = prixJournalier.toString();
+  request.fields['categorie_id'] = categorie_id.toString();
+  request.fields['disponible'] = 'true';
+
+  if (imageFile != null) {
+    request.files.add(await http.MultipartFile.fromPath('image_url', imageFile.path));
+  }
+
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (response.statusCode == 201) {
+    return true;
+  } else {
+    print('Erreur ajout: ${response.statusCode} ${response.body}');
+    return false;
+  }
+}
 }

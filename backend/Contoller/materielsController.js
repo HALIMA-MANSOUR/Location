@@ -30,10 +30,19 @@ const getAllCategories = async (req, res) => {
 
 
 const addMateriel = async (req, res) => {
-  const { nom, description, image_url, prix_journalier, disponible, categorie_id } = req.body;
+  const { body, files } = req; 
+  const { nom, description, prix_journalier, disponible, categorie_id } = body;
+const imageFile = files.find(file => file.fieldname === 'image_url');
+  const baseUrl = 'http://localhost:3000/';
+
+  const image_url = imageFile ? `${baseUrl}images/${imageFile.filename}` : null;
 
   if (!nom || !prix_journalier || !categorie_id) {
     return res.status(400).json({ message: 'Nom, prix_journalier et categorie_id sont requis' });
+  }
+
+  if (!image_url) {
+    return res.status(400).json({ error: "L'image est requise." });
   }
 
   try {
@@ -43,7 +52,7 @@ const addMateriel = async (req, res) => {
     const [result] = await db.execute(sql, [
       nom,
       description || '',
-      image_url || '',
+      image_url,
       prix_journalier,
       disponible ?? true,
       categorie_id
@@ -54,6 +63,7 @@ const addMateriel = async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
+
 
 const updateMateriel = async (req, res) => {
   const { id } = req.params;
