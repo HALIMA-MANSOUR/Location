@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:location/pages/MaterielListPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'MaterielPage.dart';
@@ -34,6 +35,16 @@ class DashboardAdmin extends StatelessWidget {
                 'Menu Admin',
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
+            ),
+             ListTile(
+              leading: const Icon(Icons.list_alt),
+              title: const Text('Liste des Matériels'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MaterielListPage()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.computer),

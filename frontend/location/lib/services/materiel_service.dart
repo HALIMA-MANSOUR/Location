@@ -27,7 +27,7 @@ class MaterielService {
   Future<void> createReservation(int materielId, String dateDebut, String dateFin, double prix, double total) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId'); // 🔥 Lecture dynamique
-
+print(userId);
     if (userId == null) {
       throw Exception('Utilisateur non connecté');
     }

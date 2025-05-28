@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:location/Admin/pages/dashboard_admin.dart';
 import 'package:location/Admin/pages/login_page.dart';
 import 'package:location/pages/Profile.dart';
+import 'package:location/pages/ReservationPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materiel.dart';
 import '../services/materiel_service.dart';
@@ -21,12 +22,14 @@ class MaterielListPageState extends State<MaterielListPage> {
   late Future<List<Materiel>> materiels;
   late Future<List<Category>> categories;
   int? selectedCategoryId;
+bool isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     categories = CategoryService().getCategories();
     materiels = MaterielService().getMateriels();
+    _loadLoginStatus();
   }
 
   void _filterMaterielsByCategory(int? categoryId) {
@@ -163,41 +166,55 @@ class MaterielListPageState extends State<MaterielListPage> {
       },
     );
   }
-
+void _loadLoginStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  });
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Matériels disponibles'),
-        centerTitle: true,
-       
-        elevation: 2,
-        backgroundColor: Colors.blueAccent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle),
-            tooltip: 'Profil / Connexion',
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-              if (isLoggedIn) {
-                final role = prefs.getString('role') ?? 'client';
-
-                if (role == 'admin') {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardAdmin()));
-                } else {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilPage()));
-                }
-              } else {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
-              }
-            },
-          ),
-        ],
+   appBar: AppBar(
+  title: const Text('Matériels disponibles'),
+  centerTitle: true,
+  elevation: 2,
+  backgroundColor: Colors.blueAccent,
+  actions: [
+    if (isLoggedIn)
+      IconButton(
+        icon: const Icon(Icons.book_online),
+        tooltip: 'Mes réservations',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ReservationPage()),
+          );
+        },
       ),
-      body: Column(
+    IconButton(
+      icon: const Icon(Icons.account_circle),
+      tooltip: 'Profil / Connexion',
+      onPressed: () async {
+        final prefs = await SharedPreferences.getInstance();
+        final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+        if (isLoggedIn) {
+          final role = prefs.getString('role') ?? 'client';
+          if (role == 'admin') {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardAdmin()));
+          } else {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilPage()));
+          }
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+        }
+      },
+    ),
+  ],
+),
+   body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),

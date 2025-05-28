@@ -55,9 +55,11 @@ class _LoginPageState extends State<LoginPage> {
 
         // Redirection selon le rôle
         if (result['user']['role'] == 'admin') {
+                    final userId = result['user']['id'];
+                    await prefs.setInt('userId', userId);
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const DashboardAdmin()),
+            MaterialPageRoute(builder: (_) => const MaterielListPage()),
           );
         } else if (result['user']['role'] == 'client') {
           final userId = result['user']['id'];
@@ -106,7 +108,6 @@ Widget build(BuildContext context) {
         },
       ),
       title: const Text('Connexion'),
-      centerTitle: true,
       backgroundColor: Colors.blueAccent,
       elevation: 0,
     ),
