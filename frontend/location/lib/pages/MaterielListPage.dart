@@ -7,7 +7,6 @@ import 'package:location/pages/Profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materiel.dart';
 import '../services/materiel_service.dart';
-import 'package:location/pages/ReservationPage.dart';
 import '../models/category.dart';
 import '../services/category_service.dart';
 
@@ -37,7 +36,18 @@ class MaterielListPageState extends State<MaterielListPage> {
     });
   }
 
-  void _showReservationDialog(Materiel materiel) {
+  Future<void> _showReservationDialog(Materiel materiel) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (!isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez vous connecter pour réserver un matériel.')),
+      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+      return;
+    }
+
     DateTime? dateDebut;
     DateTime? dateFin;
     double? total;
@@ -122,7 +132,13 @@ class MaterielListPageState extends State<MaterielListPage> {
                   onPressed: () {
                     if (dateDebut != null && dateFin != null && total != null) {
                       MaterielService()
-                          .createReservation(materiel.id, dateDebut!.toIso8601String(), dateFin!.toIso8601String(), materiel.prixJournalier, total!)
+                          .createReservation(
+                            materiel.id,
+                            dateDebut!.toIso8601String(),
+                            dateFin!.toIso8601String(),
+                            materiel.prixJournalier,
+                            total!,
+                          )
                           .then((_) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Réservation de ${materiel.nom} réussie!')),
@@ -152,54 +168,36 @@ class MaterielListPageState extends State<MaterielListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-     appBar: AppBar(
-  title: const Text('Matériels disponibles'),
-  centerTitle: false,
-  elevation: 2,
-    backgroundColor: Colors.blueAccent,
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.book_online),
-      tooltip: 'Mes réservations',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ReservationPage()),
-        );
-      },
-    ),
-  IconButton(
-  icon: const Icon(Icons.account_circle),
-  tooltip: 'Profil / Connexion',
-  onPressed: () async {
-    final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      appBar: AppBar(
+        title: const Text('Matériels disponibles'),
+        centerTitle: true,
+       
+        elevation: 2,
+        backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle),
+            tooltip: 'Profil / Connexion',
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-    if (isLoggedIn) {
-      final role = prefs.getString('role') ?? 'client'; // ou 'user' par défaut
+              if (isLoggedIn) {
+                final role = prefs.getString('role') ?? 'client';
 
-      if (role == 'admin') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardAdmin()),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfilPage()),
-        );
-      }
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    }
-  },
-)
- ],
-),
-  body: Column(
+                if (role == 'admin') {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardAdmin()));
+                } else {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilPage()));
+                }
+              } else {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+              }
+            },
+          ),
+        ],
+      ),
+      body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -213,25 +211,24 @@ class MaterielListPageState extends State<MaterielListPage> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: DropdownButton<int>(
-  isExpanded: true,
-  underline: const SizedBox(),
-  value: selectedCategoryId,
-  hint: const Text("Filtrer par catégorie"),
-  onChanged: (newValue) => _filterMaterielsByCategory(newValue),
-  items: [
-    const DropdownMenuItem<int>(
-      value: null,
-      child: Text("Toutes les catégories"),
-    ),
-    ...snapshot.data!.map((c) {
-      return DropdownMenuItem<int>(
-        value: c.id,
-        child: Text(c.nom),
-      );
-    }),
-  ],
-),
-
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        value: selectedCategoryId,
+                        hint: const Text("Filtrer par catégorie"),
+                        onChanged: (newValue) => _filterMaterielsByCategory(newValue),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text("Toutes les catégories"),
+                          ),
+                          ...snapshot.data!.map((c) {
+                            return DropdownMenuItem<int>(
+                              value: c.id,
+                              child: Text(c.nom),
+                            );
+                          }),
+                        ],
+                      ),
                     ),
                   );
                 } else if (snapshot.hasError) {
@@ -247,46 +244,86 @@ class MaterielListPageState extends State<MaterielListPage> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      final m = snapshot.data![index];
-                      return Card(
-                        elevation: 4,
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(10),
-                          leading: ClipRRect(
+  padding: const EdgeInsets.all(12),
+  itemCount: snapshot.data!.length,
+  itemBuilder: (context, index) {
+    final m = snapshot.data![index];
+    return Card(
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: InkWell(
+        onTap: () => _showReservationDialog(m),
+        borderRadius: BorderRadius.circular(15),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: m.imageUrl.isNotEmpty
+                    ? Image.network(
+                        m.imageUrl,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                      )
+                    : const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      m.nom,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      m.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            child: m.imageUrl.isNotEmpty
-                                ? Image.network(
-                                    m.imageUrl,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.broken_image, size: 40),
-                                  )
-                                : const Icon(Icons.image_not_supported, size: 40),
                           ),
-                          title: Text(
-                            m.nom,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            '${m.prixJournalier.toStringAsFixed(2)} DT/jour\n${m.description}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          isThreeLine: true,
-                          trailing: IconButton(
-                            icon: const Icon(Icons.calendar_month, color: Colors.indigo),
-                            onPressed: () => _showReservationDialog(m),
+                          child: Text(
+                            "${m.prixJournalier.toStringAsFixed(2)} DT/jour",
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                           ),
                         ),
-                      );
-                    },
-                  );
+                      ],
+                    )
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.calendar_month, color: Colors.indigo),
+                tooltip: 'Réserver',
+                onPressed: () => _showReservationDialog(m),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  },
+);
+
                 } else if (snapshot.hasError) {
                   return Center(child: Text("Erreur: ${snapshot.error}"));
                 }

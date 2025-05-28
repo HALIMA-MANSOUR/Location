@@ -23,176 +23,202 @@ class _LoginPageState extends State<LoginPage> {
   String motDePasse = '';
   bool isLoading = false;
 
-Future<void> loginUser() async {
-  setState(() {
-    isLoading = true;
-  });
+  Future<void> loginUser() async {
+    setState(() {
+      isLoading = true;
+    });
 
-  final url = Uri.parse('http://localhost:3000/loginUser');
+    final url = Uri.parse('http://localhost:3000/loginUser');
 
-  try {
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'mot_de_passe': motDePasse,
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'mot_de_passe': motDePasse,
+        }),
+      );
 
-    final result = jsonDecode(response.body);
+      final result = jsonDecode(response.body);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result['message'] ?? 'Erreur inconnue')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Erreur inconnue')),
+      );
 
-    if (response.statusCode == 200 && result['success'] == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('role', result['user']['role']); // sauvegarde le rôle
+      if (response.statusCode == 200 && result['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('role', result['user']['role']); // sauvegarde le rôle
 
-      // Redirection selon le rôle
-      if (result['user']['role'] == 'admin') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardAdmin()),
-        );
-      } else if (result['user']['role'] == 'client') {
-        final userId = result['user']['id']; 
+        // Redirection selon le rôle
+        if (result['user']['role'] == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardAdmin()),
+          );
+        } else if (result['user']['role'] == 'client') {
+          final userId = result['user']['id'];
 
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setInt('userId', userId);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfilPage()),
-        );
-      } else {
-        // Au cas où rôle inconnu, rester sur la page ou afficher une erreur
+          await prefs.setInt('userId', userId);
+         Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (_) => const MaterielListPage()),
+);
+
+        } else {
+          // Au cas où rôle inconnu, rester sur la page ou afficher une erreur
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rôle utilisateur inconnu')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle utilisateur inconnu')),
+          SnackBar(content: Text("Erreur lors de la connexion : $e")),
         );
       }
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors de la connexion : $e")),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() {
-        isLoading = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
-}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Retour',
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => MaterielListPage()),
-            );
-          },
-        ),
-        title: const Text('Connexion'),
-        backgroundColor: Colors.blueAccent,
-   
+ 
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        tooltip: 'Retour',
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MaterielListPage()),
+          );
+        },
       ),
-      backgroundColor: Colors.white,
-      body: SafeArea(
+      title: const Text('Connexion'),
+      centerTitle: true,
+      backgroundColor: Colors.blueAccent,
+      elevation: 0,
+    ),
+    backgroundColor: Colors.white,
+    body: SafeArea(
+      child: Center(  // Centre verticalement et horizontalement
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Connexion',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Connectez-vous pour continuer à réserver.',
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 30),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildInputField(
-                      label: 'Adresse Email',
-                      icon: Icons.email,
-                      onChanged: (val) => email = val,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInputField(
-                      label: 'Mot de passe',
-                      icon: Icons.lock,
-                      obscure: true,
-                      onChanged: (val) => motDePasse = val,
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              if (_formKey.currentState!.validate()) {
-                                loginUser();
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 400, // Limite la largeur max du formulaire
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+  child:
+                  Text(
+                    'Connexion',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueAccent,
                         ),
-                      ),
-                      child: isLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text(
-                              'Se connecter',
-                              style: TextStyle(fontSize: 18),
+                  ),),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Connectez-vous pour continuer à réserver.',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildInputField(
+                          label: 'Adresse Email',
+                          icon: Icons.email_outlined,
+                          onChanged: (val) => email = val,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildInputField(
+                          label: 'Mot de passe',
+                          icon: Icons.lock_outline,
+                          obscure: true,
+                          onChanged: (val) => motDePasse = val,
+                        ),
+                        const SizedBox(height: 40),
+                        ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    loginUser();
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                            backgroundColor: Colors.blueAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
+                            elevation: 6,
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : const Text(
+                                  'Se connecter',
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                        ),
+                        const SizedBox(height: 18),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const RegisterPage()),
+                            );
+                          },
+                          child: const Text(
+                            "Pas encore de compte ? S'inscrire",
+                            style: TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const RegisterPage()),
-                        );
-                      },
-                      child: const Text(
-                        "Pas encore de compte ? S'inscrire",
-                        style: TextStyle(color: Colors.blueAccent),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildInputField({
     required String label,
@@ -207,7 +233,14 @@ Future<void> loginUser() async {
         prefixIcon: Icon(icon, color: Colors.blueAccent),
         filled: true,
         fillColor: Colors.grey[100],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.blueAccent, width: 2),
+        ),
       ),
       validator: (val) =>
           val == null || val.isEmpty ? 'Ce champ est requis' : null,
