@@ -32,7 +32,7 @@ CREATE TABLE locations (
     materiel_id INT,
     date_debut DATE NOT NULL,
     date_fin DATE NOT NULL,
-    statut ENUM('en_attente', 'confirmee', 'annulee', 'terminee') DEFAULT 'en_attente',
+    statut ENUM('en_attente', 'confirmee','payee', 'annulee', 'terminee') DEFAULT 'en_attente',
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (materiel_id) REFERENCES materiels(id)
 );

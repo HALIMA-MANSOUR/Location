@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ReservationPage extends StatefulWidget {
   const ReservationPage({super.key});
 
@@ -17,7 +19,16 @@ class _ReservationPageState extends State<ReservationPage> {
   late Future<List<Map<String, dynamic>>> reservations;
 
   Future<List<Map<String, dynamic>>> fetchReservations() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/consultereserv'));
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId'); // 🔥 Lecture dynamique
+    print(userId);
+    if (userId == null) {
+      throw Exception('Utilisateur non connecté');
+    }
+
+    final url = Uri.parse('http://localhost:3000/consultereservuser/$userId');
+
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
@@ -34,15 +45,26 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   void _showEditDialog(BuildContext context, Map<String, dynamic> reservation) {
-    TextEditingController dateDebutController = TextEditingController(text: reservation['date_debut'].substring(0, 10));
-    TextEditingController dateFinController = TextEditingController(text: reservation['date_fin'].substring(0, 10));
-    double prixParJour = double.tryParse(reservation['prix_par_jour']?.toString() ?? '0') ?? 0;
-    int nombreJours = _calculerNombreJours(dateDebutController.text, dateFinController.text);
+    TextEditingController dateDebutController = TextEditingController(
+      text: reservation['date_debut'].substring(0, 10),
+    );
+    TextEditingController dateFinController = TextEditingController(
+      text: reservation['date_fin'].substring(0, 10),
+    );
+    double prixParJour =
+        double.tryParse(reservation['prix_par_jour']?.toString() ?? '0') ?? 0;
+    int nombreJours = _calculerNombreJours(
+      dateDebutController.text,
+      dateFinController.text,
+    );
     double total = prixParJour * nombreJours;
 
     void recalculerTotal() {
       setState(() {
-        nombreJours = _calculerNombreJours(dateDebutController.text, dateFinController.text);
+        nombreJours = _calculerNombreJours(
+          dateDebutController.text,
+          dateFinController.text,
+        );
         total = prixParJour * nombreJours;
       });
     }
@@ -50,7 +72,8 @@ class _ReservationPageState extends State<ReservationPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder( // Important pour rafraîchir l'intérieur du dialogue
+        return StatefulBuilder(
+          // Important pour rafraîchir l'intérieur du dialogue
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Modifier Réservation'),
@@ -59,7 +82,9 @@ class _ReservationPageState extends State<ReservationPage> {
                 children: [
                   TextField(
                     controller: dateDebutController,
-                    decoration: const InputDecoration(labelText: 'Date début (yyyy-MM-dd)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Date début (yyyy-MM-dd)',
+                    ),
                     onChanged: (value) {
                       setState(() {
                         recalculerTotal();
@@ -68,7 +93,9 @@ class _ReservationPageState extends State<ReservationPage> {
                   ),
                   TextField(
                     controller: dateFinController,
-                    decoration: const InputDecoration(labelText: 'Date fin (yyyy-MM-dd)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Date fin (yyyy-MM-dd)',
+                    ),
                     onChanged: (value) {
                       setState(() {
                         recalculerTotal();
@@ -112,14 +139,22 @@ class _ReservationPageState extends State<ReservationPage> {
     try {
       DateTime debut = DateTime.parse(dateDebut);
       DateTime fin = DateTime.parse(dateFin);
-      int diff = fin.difference(debut).inDays + 1; // +1 pour inclure le jour de début
+      int diff =
+          fin.difference(debut).inDays + 1; // +1 pour inclure le jour de début
       return diff > 0 ? diff : 0;
     } catch (e) {
       return 0;
     }
   }
 
-  Future<void> _updateReservation(int id, int materielId, String dateDebut, String dateFin, double prix, double total) async {
+  Future<void> _updateReservation(
+    int id,
+    int materielId,
+    String dateDebut,
+    String dateFin,
+    double prix,
+    double total,
+  ) async {
     final url = Uri.parse('http://localhost:3000/modifreserv/$id');
 
     final response = await http.put(
@@ -143,22 +178,27 @@ class _ReservationPageState extends State<ReservationPage> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : ${jsonDecode(response.body)['message']}')),
+        SnackBar(
+          content: Text('Erreur : ${jsonDecode(response.body)['message']}'),
+        ),
       );
     }
   }
 
   Future<String> _fetchClientToken() async {
     final response = await http.get(Uri.parse('http://localhost:3000/token'));
-    
+
     if (response.statusCode == 200) {
-      return response.body;  // Le token client généré par votre backend
+      return response.body; // Le token client généré par votre backend
     } else {
       throw Exception('Erreur de récupération du token');
     }
   }
 
-  void _showPaymentDialog(BuildContext context, Map<String, dynamic> reservation) {
+  void _showPaymentDialog(
+    BuildContext context,
+    Map<String, dynamic> reservation,
+  ) {
     // Récupérer le token de client depuis le backend
     _fetchClientToken().then((token) {
       showDialog(
@@ -168,9 +208,7 @@ class _ReservationPageState extends State<ReservationPage> {
             title: const Text('Paiement'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Montant à payer: ${reservation['total']}'),
-            ],
+              children: [Text('Montant à payer: ${reservation['total']}')],
             ),
             actions: [
               TextButton(
@@ -194,39 +232,113 @@ class _ReservationPageState extends State<ReservationPage> {
     });
   }
 
-void _processPayment(Map<String, dynamic> reservation, String token) async {
-  try {
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'montant': reservation['total'].toString(),  // Envoi du montant total à payer dans le corps
-      }),
+  void _processPayment(Map<String, dynamic> reservation, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          'http://localhost:3000/recupererCarteParId?email=alice@example.com&cardId=1',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'montant': reservation['total'].toString(),
+          'locationId': reservation['id'],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        setState(() {
+          reservations =
+              fetchReservations(); // force la mise à jour de la liste
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}',
+            ),
+          ),
+        );
+      } else {
+        final errorMessage =
+            jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du paiement : $errorMessage')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur de connexion : $e')));
+    }
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, int id) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirmation de suppression'),
+          content: const Text(
+            'Êtes-vous sûr de vouloir supprimer cette réservation ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(
+                  context,
+                ).pop(); // Ferme le dialogue sans faire de suppression
+              },
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _deleteReservation(id); // Appel de la méthode de suppression
+                Navigator.of(
+                  context,
+                ).pop(); // Ferme le dialogue après la suppression
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteReservation(int id) async {
+    final response = await http.delete(
+      Uri.parse('http://localhost:3000/deletelocation/$id'),
     );
 
     if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Paiement effectué avec succès ! Transaction ID : ${responseData['transactionId']}')),
+        const SnackBar(content: Text('Réservation supprimée avec succès')),
       );
+      setState(() {
+        reservations = fetchReservations();
+      });
     } else {
-      final errorMessage = jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du paiement : $errorMessage')),
+        SnackBar(
+          content: Text(
+            'Erreur lors de la suppression : ${jsonDecode(response.body)['message']}',
+          ),
+        ),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erreur de connexion : $e')),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes Réservations')),
-      body: FutureBuilder<List<Map<String, dynamic>>>( 
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Mes Réservations'),
+        centerTitle: false,
+        elevation: 2,
+        backgroundColor: Colors.blueAccent,
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: reservations,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -237,54 +349,74 @@ void _processPayment(Map<String, dynamic> reservation, String token) async {
             return const Center(child: Text('Aucune réservation à afficher.'));
           }
 
-      return ListView.builder(
-  itemCount: snapshot.data!.length,
-  itemBuilder: (context, index) {
-    final reservation = snapshot.data![index];
-    return Card(
-      margin: const EdgeInsets.all(8),
-      child: ListTile(
-        title: Text(reservation['nom_materiel'] ?? ''),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Affichage du statut
-            Text(
-              'Statut: ${reservation['statut'] ?? 'Inconnu'}',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-  if (reservation['statut'] == 'en_attente')
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  _showEditDialog(context, reservation);
-                },
-              ),
- if (reservation['statut'] == 'confirmee')
-              IconButton(
-                icon: const Icon(Icons.payment),
-                onPressed: () {
-                  _showPaymentDialog(context, reservation);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  },
-);
-  },
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final reservation = snapshot.data![index];
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  title: Text(reservation['nom_materiel'] ?? ''),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Du ${reservation['date_debut'].substring(0, 10)} au ${reservation['date_fin'].substring(0, 10)}",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Affichage du statut
+                      Text(
+                        'Statut: ${reservation['statut'] ?? 'Inconnu'}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (reservation['statut'] == 'en_attente') ...[
+                        // Affichage du bouton "Modifier"
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          color: const Color.fromARGB(255, 230, 166, 4),
+                          onPressed: () {
+                            _showEditDialog(context, reservation);
+                          },
+                        ),
+                        // Affichage du bouton "Supprimer"
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          color: Colors.red, // 👈 couleur rouge ici
+                          onPressed: () {
+                            _showDeleteConfirmationDialog(
+                              context,
+                              reservation['id'],
+                            );
+                          },
+                        ),
+                      ],
+                      if (reservation['statut'] == 'confirmee') ...[
+                        // Affichage du bouton "Payer"
+                        IconButton(
+                          icon: const Icon(Icons.payment),
+                          color: const Color.fromARGB(255, 14, 209, 3),
+                          onPressed: () {
+                            _showPaymentDialog(context, reservation);
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

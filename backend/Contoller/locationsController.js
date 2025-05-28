@@ -2,12 +2,14 @@ const db = require('../BD/db');
 
 // Fonction pour créer une location
 const createLocation = async (req, res) => {
-  const { materiel_id, date_debut, date_fin, prix, total } = req.body; // 🔥 Ajout de prix ici
-  const user_id = 1;
+  const { user_id, materiel_id, date_debut, date_fin, prix, total } = req.body;
 
   try {
-    // 1. Vérifier si le matériel est disponible
-    const [disponibiliteResults] = await db.query('SELECT disponible FROM materiels WHERE id = ?', [materiel_id]);
+    // 1. Vérifier si le matériel existe et est disponible
+    const [disponibiliteResults] = await db.query(
+      'SELECT disponible FROM materiels WHERE id = ?',
+      [materiel_id]
+    );
 
     if (disponibiliteResults.length === 0) {
       return res.status(404).json({ message: 'Matériel introuvable' });
@@ -18,7 +20,7 @@ const createLocation = async (req, res) => {
       return res.status(400).json({ message: 'Ce matériel n\'est pas disponible actuellement' });
     }
 
-    // 2. Si disponible, procéder à l'insertion
+    // 2. Insérer la location liée à ce user
     const [result] = await db.query(
       'INSERT INTO locations (user_id, materiel_id, date_debut, date_fin, prix, total) VALUES (?, ?, ?, ?, ?, ?)',
       [user_id, materiel_id, date_debut, date_fin, prix, total]
@@ -34,6 +36,7 @@ const createLocation = async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
+
 
 // Fonction pour obtenir toutes les locations
 const getAllLocations = async (req, res) => {
@@ -138,8 +141,51 @@ const updateLocation = async (req, res) => {
   }
 };
 
+const deleteLocation = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Vérifier si la location existe avant de la supprimer
+    const [locationResult] = await db.query('SELECT * FROM locations WHERE id = ?', [id]);
+
+    if (locationResult.length === 0) {
+      return res.status(404).json({ message: 'Réservation non trouvée' });
+    }
+
+    // Supprimer la location
+    await db.query('DELETE FROM locations WHERE id = ?', [id]);
+
+    res.status(200).json({ message: 'Réservation supprimée avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression de la réservation:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+const getLocationsByUserId = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [results] = await db.query(
+      `SELECT l.*, m.nom AS nom_materiel, u.nom AS nom_utilisateur
+       FROM locations l
+       JOIN materiels m ON l.materiel_id = m.id
+       JOIN users u ON l.user_id = u.id
+       WHERE l.user_id = ?`,
+      [userId]
+    );
+
+    res.json(results);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des locations par utilisateur:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
   createLocation,
   getAllLocations,
-  updateLocation
+  updateLocation,
+  deleteLocation,
+  getLocationsByUserId,
 };

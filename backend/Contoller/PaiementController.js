@@ -54,19 +54,18 @@ const porfeuille = async (req, res) => {
 };
 
 const recupererCarteParId = async (req, res) => {
-  const email = req.query.email;  // paramètre dans l'URL
-  const cardId = req.query.cardId;  // paramètre dans l'URL
-  const montantAPayer = req.body.montant;  // Montant dans le corps de la requête
+  const email = req.query.email;
+  const cardId = req.query.cardId;
+  const montantAPayer = req.body.montant;
+  const locationId = req.body.locationId; // 🆕 ID de la location à mettre à jour
 
-  console.log(`Email: ${email}, CardId: ${cardId}, Montant: ${montantAPayer}`);
+  console.log(`Email: ${email}, CardId: ${cardId}, Montant: ${montantAPayer}, LocationId: ${locationId}`);
 
-  // Vérifier que le montant est bien dans le corps de la requête
-  if (!montantAPayer) {
-    return res.status(400).json({ success: false, message: 'Montant à payer manquant dans la requête' });
+  if (!montantAPayer || !locationId) {
+    return res.status(400).json({ success: false, message: 'Montant ou ID de location manquant' });
   }
 
   try {
-    // Rechercher la carte par email et ID
     const [rows] = await db.query(
       'SELECT * FROM cartes WHERE id = ? AND email = ?',
       [cardId, email]
@@ -77,24 +76,30 @@ const recupererCarteParId = async (req, res) => {
     }
 
     const carte = rows[0];
-
-    // Simuler le paiement
     const transactionResult = await effectuerPaiement(carte, montantAPayer);
 
-    const minimalResponse = {
-      success: true,
-      message: 'Paiement effectué avec succès',
-      transactionId: transactionResult.transaction.id,
-      amount: transactionResult.transaction.amount,
-      currency: transactionResult.transaction.currencyIsoCode,
-      status: transactionResult.transaction.status,
-      createdAt: transactionResult.transaction.createdAt,
-    };
+    // 🆕 Vérifier le résultat et mettre à jour la table locations
+    if (transactionResult.success) {
+      await db.query(
+        'UPDATE locations SET statut = ?, total = ? WHERE id = ? AND statut = ?',
+        ['payee', montantAPayer, locationId, 'confirmee']
+      );
 
-    res.json(minimalResponse);
+      return res.json({
+        success: true,
+        message: 'Paiement effectué et statut mis à jour',
+        transactionId: transactionResult.transaction.id,
+        amount: transactionResult.transaction.amount,
+        currency: transactionResult.transaction.currencyIsoCode,
+        status: transactionResult.transaction.status,
+        createdAt: transactionResult.transaction.createdAt,
+      });
+    } else {
+      return res.status(400).json({ success: false, message: 'Échec du paiement' });
+    }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Erreur lors du paiement' });
+    return res.status(500).json({ success: false, message: 'Erreur lors du traitement du paiement' });
   }
 };
 

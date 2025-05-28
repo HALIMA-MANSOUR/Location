@@ -1,3 +1,5 @@
+// Ce bloc est désormais obsolète avec les versions récentes de Gradle pour Flutter.
+// À ne garder que si tu l’utilises explicitement dans une configuration personnalisée.
 allprojects {
     repositories {
         google()
@@ -5,17 +7,21 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// Configuration personnalisée du répertoire de build
+val newBuildDir = rootProject.layout.buildDirectory.dir("../../build")
 
+rootProject.layout.buildDirectory.set(newBuildDir)
+
+// Applique la même logique de buildDir aux sous-projets
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
-    project.evaluationDependsOn(":app")
+    val newSubprojectBuildDir = newBuildDir.map { it.dir(project.name) }
+    layout.buildDirectory.set(newSubprojectBuildDir)
+
+    // Assure que le projet 'app' est évalué avant les autres
+    evaluationDependsOn(":app")
 }
 
+// Tâche de nettoyage
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
